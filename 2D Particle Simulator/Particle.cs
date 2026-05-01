@@ -11,28 +11,68 @@ namespace _2D_Particle_Simulator
     {
         float x;
         float y;
-        float xvel;
-        float yvel;
-        public Particle(float x, float y)
+        internal float xvel;
+        internal float yvel;
+        public float attraction; // Positive for attraction, negative for repulsion
+        public Particle(float x, float y, float attraction = -10)
         {
             this.x = x;
             this.y = y;
             xvel = 0;
             yvel = 0;
+            this.attraction = attraction;
         }
-        public Particle(float x, float y, float xvel, float yvel)
+        public Particle(float x, float y, float xvel, float yvel, float attraction = -10)
         {
             this.x = x;
             this.y = y;
             this.xvel = xvel;
             this.yvel = yvel;
+            this.attraction = attraction;
         }
         public void SetVelocity(float x, float y)
         {
             xvel = x;
             yvel = y;
         }
-        public void Tick(Boundary[] bounds)
+        public void Tick(Boundary[] bounds, Particle[] particles)
+        {
+            UpdateVelocities(particles);
+            UpdatePosition(bounds);
+        }
+        private void UpdateVelocities(Particle[] particles)
+        {
+            for (int i = 0; i < particles.Length; i++)
+            {
+                Particle p = particles[i];
+                if (p == this) continue;
+                // Only apply force once per unique pair
+                if (this.GetHashCode() < p.GetHashCode())
+                {
+                    float dx = p.x - x;
+                    float dy = p.y - y;
+                    float distSq = dx * dx + dy * dy;
+                    if (distSq < 100)
+                    {
+                        float dist = MathF.Sqrt(distSq);
+                        if (dist > 0)
+                        {
+                            // Average the attraction values for the pair
+                            float avgAttraction = (this.attraction + p.attraction) / 2f;
+                            float force = avgAttraction / distSq;
+                            float fx = force * dx / dist;
+                            float fy = force * dy / dist;
+                            // Apply equal and opposite forces
+                            xvel -= fx;
+                            yvel -= fy;
+                            p.xvel += fx;
+                            p.yvel += fy;
+                        }
+                    }
+                }
+            }
+        }
+        private void UpdatePosition(Boundary[] bounds)
         {
             float newx = x + xvel;
             float newy = y + yvel;
@@ -127,7 +167,19 @@ namespace _2D_Particle_Simulator
         }
         public void Draw(Graphics g, float scale)
         {
-            g.FillEllipse(Brushes.White, x * scale, y * scale, 2 * scale, 2 * scale);
+            // Map attraction value to color between red (repulsion) and blue (attraction)
+            // Clamp attraction between -20 (red) and +20 (blue)
+            float minAttr = -20f, maxAttr = 20f;
+            float t = (attraction - minAttr) / (maxAttr - minAttr);
+            t = MathF.Max(0, MathF.Min(1, t));
+            // Red: (255,0,0), Blue: (0,0,255)
+            int r = (int)(255 * (1 - t));
+            int gcol = 0;
+            int b = (int)(255 * t);
+            using (var brush = new SolidBrush(System.Drawing.Color.FromArgb(r, gcol, b)))
+            {
+                g.FillEllipse(brush, x * scale, y * scale, 2 * scale, 2 * scale);
+            }
         }   
     }
 }
