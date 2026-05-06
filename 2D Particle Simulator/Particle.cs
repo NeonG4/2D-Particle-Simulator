@@ -13,27 +13,87 @@ namespace _2D_Particle_Simulator
         float y;
         internal float xvel;
         internal float yvel;
-        public float attraction; // Positive for attraction, negative for repulsion
-        public Particle(float x, float y, float attraction = -10)
+        public int partType; // Positive for attraction, negative for repulsion
+        public static float[,] attractionLevels;
+        public static float[,] assosiation;
+        public static int particleTypes;
+        public static Color[] colors = new Color[] { Color.Red, Color.Blue, Color.Green, Color.Magenta, Color.Yellow, Color.Cyan };
+        public static void SetAttractionLevels(float[,] al, float[,] assoc)
         {
+            if (al.GetLength(1) != al.GetLength(0))
+            {
+                throw new ArgumentException("Invalid attraction level dimensions");
+            }
+            if (al.GetLength(0) > colors.Length)
+            {
+                throw new ArgumentException("Too many attraction levels");
+            }
+            if (assoc.GetLength(0) != al.GetLength(0) || assoc.GetLength(1) != al.GetLength(0))
+            {
+                throw new ArgumentException("Association matrix must be same size as attraction levels");
+            }
+            particleTypes = al.GetLength(0) - 1;
+            attractionLevels = al;
+            assosiation = assoc;
+        }
+        public static Particle CopyParticle(Particle p)
+        {
+            return new Particle(p.x, p.y, p.xvel, p.yvel, p.partType);
+        }
+        public Particle(float x, float y, int particleType)
+        {
+            if (attractionLevels == null)
+            {
+                throw new Exception("Please call static SetAttractionLevels method before any constructor");
+            }
+            if (particleType < 0 || particleType > particleTypes)
+            {
+                throw new Exception("Illegal particleType value, out of bounds.");
+            }
             this.x = x;
             this.y = y;
             xvel = 0;
             yvel = 0;
-            this.attraction = attraction;
+
+            
+            this.partType = particleType;
         }
-        public Particle(float x, float y, float xvel, float yvel, float attraction = -10)
+        public Particle(float x, float y, float xvel, float yvel, int particleType)
         {
+            if (attractionLevels == null)
+            {
+                throw new Exception("Please call static SetAttractionLevels method before any constructor");
+            }
+            if (particleType < 0 || particleType > particleTypes)
+            {
+                throw new Exception("Illegal particleType value, out of bounds.");
+            }
             this.x = x;
             this.y = y;
             this.xvel = xvel;
             this.yvel = yvel;
-            this.attraction = attraction;
+            this.partType= particleType;
         }
         public void SetVelocity(float x, float y)
         {
             xvel = x;
             yvel = y;
+        }
+        public float GetVelocity()
+        {
+            return MathF.Sqrt(xvel * xvel + yvel * yvel);
+        }
+        public float GetX()
+        {
+            return x;
+        }
+        public float GetY()
+        {
+            return y;
+        }
+        public bool IsInArea(float x, float y, float width, float height)
+        {
+            return this.x >= x && this.x <= x + width && this.y >= y && this.y <= y + height;
         }
         public void Tick(Boundary[] bounds, Particle[] particles)
         {
@@ -49,28 +109,35 @@ namespace _2D_Particle_Simulator
                 // Only apply force once per unique pair
                 if (this.GetHashCode() < p.GetHashCode())
                 {
-                    float dx = p.x - x;
-                    float dy = p.y - y;
+                    float dx = x - p.x;
+                    float dy = y - p.y;
                     float distSq = dx * dx + dy * dy;
                     if (distSq < 100)
                     {
                         float dist = MathF.Sqrt(distSq);
                         if (dist > 0)
                         {
-                            // Average the attraction values for the pair
-                            float avgAttraction = (this.attraction + p.attraction) / 2f;
-                            float force = avgAttraction / distSq;
+                            // Targeted distance for the pair; farther than target attracts, closer repels
+                            float targetDistance = attractionLevels[this.partType, p.partType];
+                            float targetAssociation = assosiation[this.partType, p.partType];
+                            float force;
+                            
+                            force = targetAssociation * (dist - targetDistance) / (1 + (dist - targetDistance) * (dist - targetDistance));
+                            
                             float fx = force * dx / dist;
                             float fy = force * dy / dist;
                             // Apply equal and opposite forces
                             xvel -= fx;
                             yvel -= fy;
+                            
                             p.xvel += fx;
                             p.yvel += fy;
                         }
                     }
                 }
             }
+            xvel *= 0.99f;
+            yvel *= 0.99f;
         }
         private void UpdatePosition(Boundary[] bounds)
         {
@@ -170,15 +237,10 @@ namespace _2D_Particle_Simulator
             // Map attraction value to color between red (repulsion) and blue (attraction)
             // Clamp attraction between -20 (red) and +20 (blue)
             float minAttr = -20f, maxAttr = 20f;
-            float t = (attraction - minAttr) / (maxAttr - minAttr);
-            t = MathF.Max(0, MathF.Min(1, t));
-            // Red: (255,0,0), Blue: (0,0,255)
-            int r = (int)(255 * (1 - t));
-            int gcol = 0;
-            int b = (int)(255 * t);
-            using (var brush = new SolidBrush(System.Drawing.Color.FromArgb(r, gcol, b)))
+
+            using (var brush = new SolidBrush(colors[partType]))
             {
-                g.FillEllipse(brush, x * scale, y * scale, 2 * scale, 2 * scale);
+                g.FillEllipse(brush, (x - 1) * scale, (y - 1) * scale, 2 * scale, 2 * scale);
             }
         }   
     }
