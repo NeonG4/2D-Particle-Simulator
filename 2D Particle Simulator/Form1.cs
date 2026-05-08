@@ -1,10 +1,14 @@
 using System.Net.NetworkInformation;
 
+using ComputeSharp;
+using _2D_Particle_Simulator;
+
+
 namespace _2D_Particle_Simulator
 {
     public partial class FormParticleSim : Form
     {
-        Particle[] particles = new Particle[2000];
+        Particle[] particles = new Particle[10000];
         Boundary[] bounds = new Boundary[4];
         Point corner;
         float scale = 2f;
@@ -16,7 +20,7 @@ namespace _2D_Particle_Simulator
             Random rand = new Random();
 
             int size = 6; // the number of particle types
-            corner = new Point(1028, 512); // the size of the simulation area
+            corner = new Point(512, 256); // the size of the simulation area
 
             float[,] al = new float[size, size];
             float[,] assoc = new float[size, size];
@@ -98,17 +102,58 @@ namespace _2D_Particle_Simulator
             cycles = (int)numericUpDownCycles.Value;
             for (int j = 0; j < cycles; j++)
             {
-                Particle[] lastTickParticles = CreateCopy(particles);
-                for (int i = 0; i < particles.Length; i++)
+                GpuUpdateParticles();
+            }
+            labelAverageSpeed.Text = "Average Speed: " + GetAverageSpeed() + " pixels per tick";
+        }
+
+        private void GpuUpdateParticles()
+        {
+            // Prepare data for GPU
+            var particleData = new ParticleGpu[particles.Length];
+            for (int i = 0; i < particles.Length; i++)
+            {
+                var p = particles[i];
+                particleData[i] = new ParticleGpu
                 {
-                    if (particles[i] != null)
-                    {
-                        particles[i].Tick(bounds, lastTickParticles);
-                    }
-                }
+                    X = p.GetX(),
+                    Y = p.GetY(),
+                    XVel = p.xvel,
+                    YVel = p.yvel,
+                    PartType = p.partType
+                };
             }
 
-            labelAverageSpeed.Text = "Average Speed: " + GetAverageSpeed() + " pixels per tick";
+            int types = Particle.particleTypes;
+            // Flatten attractionLevels and association for GPU
+            var attractionFlat = new float[(types + 1) * (types + 1)];
+            var assocFlat = new float[(types + 1) * (types + 1)];
+            for (int i = 0; i <= types; i++)
+                for (int j = 0; j <= types; j++)
+                {
+                    int idx = i * (types + 1) + j;
+                    attractionFlat[idx] = Particle.attractionLevels[i, j];
+                    assocFlat[idx] = Particle.assosiation[i, j];
+                }
+
+            var device = GraphicsDevice.GetDefault();
+            using (var gpuParticles = device.AllocateReadWriteBuffer(particleData))
+            using (var gpuAttraction = device.AllocateReadOnlyBuffer(attractionFlat))
+            using (var gpuAssoc = device.AllocateReadOnlyBuffer(assocFlat))
+            {
+                var shader = new ParticleUpdateShader(gpuParticles, gpuAttraction, gpuAssoc, types, particles.Length);
+                device.For(particles.Length, in shader);
+                gpuParticles.CopyTo(particleData);
+            }
+
+            // Copy back to CPU particles
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].x = particleData[i].X;
+                particles[i].y = particleData[i].Y;
+                particles[i].xvel = particleData[i].XVel;
+                particles[i].yvel = particleData[i].YVel;
+            }
         }
 
         private void FormParticleSim_Paint(object sender, PaintEventArgs e)

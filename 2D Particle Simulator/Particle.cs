@@ -9,8 +9,8 @@ namespace _2D_Particle_Simulator
 {
     internal class Particle
     {
-        float x;
-        float y;
+        internal float x;
+        internal float y;
         internal float xvel;
         internal float yvel;
         public int partType; // Positive for attraction, negative for repulsion
