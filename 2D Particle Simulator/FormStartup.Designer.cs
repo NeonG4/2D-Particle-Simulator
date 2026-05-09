@@ -96,6 +96,7 @@
             textBoxBoundaryY.Size = new Size(54, 27);
             textBoxBoundaryY.TabIndex = 3;
             textBoxBoundaryY.Text = "256";
+            textBoxBoundaryY.TextChanged += textBoxBoundaryY_TextChanged_1;
             // 
             // buttonCreateSimulator
             // 

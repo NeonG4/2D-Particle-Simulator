@@ -34,16 +34,16 @@ namespace _2D_Particle_Simulator
             // update density
             UpdateDensity();
         }
-        private void textBoxBoundaryY_TextChanged(object sender, EventArgs e)
-        {
-            // update density
-            UpdateDensity();
-        }
         private void textBoxBoundaryX_TextChanged(object sender, EventArgs e)
         {
             // update density
             UpdateDensity();
         }
 
+        private void textBoxBoundaryY_TextChanged_1(object sender, EventArgs e)
+        {
+            // update density
+            UpdateDensity();
+        }
     }
 }
