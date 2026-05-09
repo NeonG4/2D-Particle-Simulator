@@ -8,19 +8,22 @@ namespace _2D_Particle_Simulator
 {
     public partial class FormParticleSim : Form
     {
-        Particle[] particles = new Particle[10000];
+        Particle[] particles;
         Boundary[] bounds = new Boundary[4];
         Point corner;
         float scale = 2f;
-        bool overlayDensity = false;
         int cycles = 1;
-        public FormParticleSim()
+        bool paused = false;
+        public FormParticleSim(int particleTypes, int particleCount, int boundX, int boundY)
         {
             InitializeComponent();
-            Random rand = new Random();
 
-            int size = 6; // the number of particle types
-            corner = new Point(512, 256); // the size of the simulation area
+            // constructor arguments
+            particles = new Particle[particleCount];
+            int size = particleTypes;
+            corner = new Point(boundX, boundY);
+
+            Random rand = new Random();
 
             float[,] al = new float[size, size];
             float[,] assoc = new float[size, size];
@@ -29,7 +32,6 @@ namespace _2D_Particle_Simulator
                 for (int j = 0; j < size; j++)
                 {
                     al[i, j] = (float)(rand.NextDouble() * 10);
-                    // assoc[i, j] = (float)(rand.NextDouble());
                     assoc[i, j] = 0.08f;
                 }
             }
@@ -43,6 +45,7 @@ namespace _2D_Particle_Simulator
                 totalWeight += weights[i];
             }
 
+            // helper function for selecting particle types based on weights, gives uneven distribution favoring lower indexed types
             int SelectWeightedType()
             {
                 int roll = rand.Next(totalWeight);
@@ -79,26 +82,89 @@ namespace _2D_Particle_Simulator
             labelAverageSpeed.Text = "Average Speed: " + GetAverageSpeed() + " pixels per tick";
             labelAverageSpeed.Location = new Point(labelXPos, labelAverageSpeed.Location.Y);
 
-            checkBoxOverylayDensity.Location = new Point(labelXPos, checkBoxOverylayDensity.Location.Y);
-
             numericUpDownCycles.Location = new Point(labelXPos + numericUpDownCycles.Location.X, numericUpDownCycles.Location.Y);
             labelCyclesPerFrame.Location = new Point(labelXPos, labelCyclesPerFrame.Location.Y);
+
+            buttonPausePlay.Location = new Point(labelXPos, buttonPausePlay.Location.Y);
+
+            InitializeAttractionTable();
         }
-        private Particle[] CreateCopy(Particle[] particles)
+        private void InitializeAttractionTable()
         {
-            Particle[] copy = new Particle[particles.Length];
-            for (int i = 0; i < particles.Length; i++)
+            int size = Particle.attractionLevels.GetLength(0);
+            dataGridAttraction.ColumnCount = size;
+            dataGridAttraction.RowCount = size;
+            dataGridAttraction.ReadOnly = false;
+            dataGridAttraction.DefaultCellStyle.Format = "0.###";
+            dataGridAttraction.BackgroundColor = Color.Black;
+            dataGridAttraction.DefaultCellStyle.BackColor = Color.Black;
+            dataGridAttraction.DefaultCellStyle.ForeColor = Color.White;
+            dataGridAttraction.ColumnHeadersDefaultCellStyle.BackColor = Color.Black;
+            dataGridAttraction.ColumnHeadersDefaultCellStyle.ForeColor = Color.White;
+            dataGridAttraction.RowHeadersDefaultCellStyle.BackColor = Color.Black;
+            dataGridAttraction.RowHeadersDefaultCellStyle.ForeColor = Color.White;
+            dataGridAttraction.EnableHeadersVisualStyles = false;
+            dataGridAttraction.RowHeadersWidth = dataGridAttraction.RowHeadersWidth + 35;
+            dataGridAttraction.CellValidating += dataGridAttraction_CellValidating;
+            dataGridAttraction.CellValueChanged += dataGridAttraction_CellValueChanged;
+
+            for (int i = 0; i < size; i++)
             {
-                if (particles[i] != null)
+                string colorName = Particle.colors[i].IsKnownColor
+                    ? Particle.colors[i].Name
+                    : $"Color {i}";
+                dataGridAttraction.Columns[i].Name = colorName;
+                dataGridAttraction.Rows[i].HeaderCell.Value = colorName;
+                for (int j = 0; j < size; j++)
                 {
-                    copy[i] = Particle.CopyParticle(particles[i]); 
+                    dataGridAttraction.Rows[i].Cells[j].Value = Particle.attractionLevels[i, j];
                 }
             }
-            return copy;
+
+            int gridTop = (int)(corner.Y * scale) + 20;
+            dataGridAttraction.Location = new Point(0, gridTop);
+            dataGridAttraction.Width = ClientSize.Width;
+            int desiredHeight = 200;
+            dataGridAttraction.Height = desiredHeight;
+            if (ClientSize.Height < gridTop + desiredHeight + 10)
+            {
+                ClientSize = new Size(ClientSize.Width, gridTop + desiredHeight + 10);
+            }
+        }
+
+        private void dataGridAttraction_CellValidating(object sender, DataGridViewCellValidatingEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            {
+                return;
+            }
+
+            if (!float.TryParse(e.FormattedValue?.ToString(), out _))
+            {
+                e.Cancel = true;
+            }
+        }
+
+        private void dataGridAttraction_CellValueChanged(object sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0 || e.ColumnIndex < 0)
+            {
+                return;
+            }
+
+            var cellValue = dataGridAttraction.Rows[e.RowIndex].Cells[e.ColumnIndex].Value?.ToString();
+            if (float.TryParse(cellValue, out float value))
+            {
+                Particle.attractionLevels[e.RowIndex, e.ColumnIndex] = value;
+            }
         }
         private void timerTick_Tick(object sender, EventArgs e)
         {
             this.Invalidate(); // retriggers paint event
+            if (paused)
+            {
+                return;
+            }
             cycles = (int)numericUpDownCycles.Value;
             for (int j = 0; j < cycles; j++)
             {
@@ -123,8 +189,8 @@ namespace _2D_Particle_Simulator
                     PartType = p.partType
                 };
             }
-
             int types = Particle.particleTypes;
+
             // Flatten attractionLevels and association for GPU
             var attractionFlat = new float[(types + 1) * (types + 1)];
             var assocFlat = new float[(types + 1) * (types + 1)];
@@ -141,7 +207,7 @@ namespace _2D_Particle_Simulator
             using (var gpuAttraction = device.AllocateReadOnlyBuffer(attractionFlat))
             using (var gpuAssoc = device.AllocateReadOnlyBuffer(assocFlat))
             {
-                var shader = new ParticleUpdateShader(gpuParticles, gpuAttraction, gpuAssoc, types, particles.Length);
+                var shader = new ParticleUpdateShader(gpuParticles, gpuAttraction, gpuAssoc, types, particles.Length, corner.X, corner.Y);
                 device.For(particles.Length, in shader);
                 gpuParticles.CopyTo(particleData);
             }
@@ -159,35 +225,6 @@ namespace _2D_Particle_Simulator
         private void FormParticleSim_Paint(object sender, PaintEventArgs e)
         {
             e.Graphics.Clear(Color.Black);
-            
-
-            if (overlayDensity)
-            {
-                int perSector = 16;
-                int[,] counts = new int[corner.X / perSector, corner.Y / perSector];
-                foreach (Particle p in particles)
-                {
-                    counts[(int)p.GetX() / perSector, (int)p.GetY() / perSector]++;
-                }
-                for (int i = 0; i < corner.X / perSector; i++)
-                {
-                    for (int j = 0; j < corner.Y / perSector; j++)
-                    {
-                        int count = counts[i, j];
-                        if (count > 0)
-                        {
-                            int alpha = Math.Min(255, count * 32);
-                            float t = Math.Min(1f, alpha / 255f);
-                            int red = (int)(255 * t);
-                            int blue = (int)(255 * (1f - t));
-                            using (Brush b = new SolidBrush(Color.FromArgb(alpha, red, 0, blue)))
-                            {
-                                e.Graphics.FillRectangle(b, scale * (i * perSector), scale * (j * perSector), scale * perSector, scale * perSector);
-                            }
-                        }
-                    }
-                }
-            }    
             foreach (Particle p in particles)
             {
                 if (p != null)
@@ -216,9 +253,49 @@ namespace _2D_Particle_Simulator
             return (int)(totalSpeed / particles.Length * 1000) / 1000f;
         }
 
-        private void checkBoxOverylayDensity_CheckedChanged(object sender, EventArgs e)
+        private void FormParticleSim_FormClosed(object sender, FormClosedEventArgs e)
         {
-            overlayDensity = checkBoxOverylayDensity.Checked;
+            Application.Exit(); // closes all forms
+        }
+
+        private void buttonPausePlay_Click(object sender, EventArgs e)
+        {
+            TickPauseButton();
+        }
+        private void TickPauseButton()
+        {
+            paused = !paused;
+            if (paused)
+            {
+                buttonPausePlay.Text = "Play";
+            }
+            else
+            {
+                buttonPausePlay.Text = "Pause";
+            }
+        }
+        private void FormParticleSim_KeyDown(object sender, KeyEventArgs e)
+        {
+            // spacebar to pause/play
+            if (e.KeyCode == Keys.Space)
+            {
+                e.SuppressKeyPress = true;
+                e.Handled = true;
+            }
+        }
+
+        private void FormParticleSim_KeyUp(object sender, KeyEventArgs e)
+        {
+            // spacebar to pause/play
+            if (e.KeyCode == Keys.Space)
+            {
+                TickPauseButton();
+            }
+        }
+
+        private void FormParticleSim_Enter(object sender, EventArgs e)
+        {
+            TickPauseButton();
         }
     }
 }

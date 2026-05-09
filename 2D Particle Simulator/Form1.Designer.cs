@@ -33,10 +33,12 @@
             labelDensity = new Label();
             labelParticleCount = new Label();
             labelAverageSpeed = new Label();
-            checkBoxOverylayDensity = new CheckBox();
             numericUpDownCycles = new NumericUpDown();
             labelCyclesPerFrame = new Label();
+            buttonPausePlay = new Button();
+            dataGridAttraction = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)numericUpDownCycles).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridAttraction).BeginInit();
             SuspendLayout();
             // 
             // timerTick
@@ -78,56 +80,80 @@
             labelAverageSpeed.TabIndex = 2;
             labelAverageSpeed.Text = "Average Speed: TBD";
             // 
-            // checkBoxOverylayDensity
-            // 
-            checkBoxOverylayDensity.AutoSize = true;
-            checkBoxOverylayDensity.ForeColor = SystemColors.ControlLightLight;
-            checkBoxOverylayDensity.Location = new Point(12, 72);
-            checkBoxOverylayDensity.Name = "checkBoxOverylayDensity";
-            checkBoxOverylayDensity.Size = new Size(134, 24);
-            checkBoxOverylayDensity.TabIndex = 3;
-            checkBoxOverylayDensity.Text = "Overlay Density";
-            checkBoxOverylayDensity.UseVisualStyleBackColor = true;
-            checkBoxOverylayDensity.CheckedChanged += checkBoxOverylayDensity_CheckedChanged;
-            // 
             // numericUpDownCycles
             // 
-            numericUpDownCycles.Location = new Point(125, 97);
+            numericUpDownCycles.Location = new Point(125, 67);
             numericUpDownCycles.Maximum = new decimal(new int[] { 25, 0, 0, 0 });
+            numericUpDownCycles.Minimum = new decimal(new int[] { 1, 0, 0, 0 });
             numericUpDownCycles.Name = "numericUpDownCycles";
             numericUpDownCycles.Size = new Size(46, 27);
             numericUpDownCycles.TabIndex = 4;
+            numericUpDownCycles.Value = new decimal(new int[] { 1, 0, 0, 0 });
             // 
             // labelCyclesPerFrame
             // 
             labelCyclesPerFrame.AutoSize = true;
             labelCyclesPerFrame.ForeColor = SystemColors.ControlLightLight;
-            labelCyclesPerFrame.Location = new Point(12, 99);
+            labelCyclesPerFrame.Location = new Point(12, 69);
             labelCyclesPerFrame.Name = "labelCyclesPerFrame";
             labelCyclesPerFrame.Size = new Size(107, 20);
             labelCyclesPerFrame.TabIndex = 5;
             labelCyclesPerFrame.Text = "Cycles Per Tick:";
             // 
+            // buttonPausePlay
+            // 
+            buttonPausePlay.Location = new Point(11, 104);
+            buttonPausePlay.Name = "buttonPausePlay";
+            buttonPausePlay.Size = new Size(108, 29);
+            buttonPausePlay.TabIndex = 6;
+            buttonPausePlay.Text = "Pause";
+            buttonPausePlay.UseVisualStyleBackColor = true;
+            buttonPausePlay.Click += buttonPausePlay_Click;
+            // 
+            // dataGridAttraction
+            // 
+            dataGridAttraction.AllowUserToAddRows = false;
+            dataGridAttraction.AllowUserToDeleteRows = false;
+            dataGridAttraction.AllowUserToResizeRows = false;
+            dataGridAttraction.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.AllCells;
+            dataGridAttraction.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dataGridAttraction.Location = new Point(0, 0);
+            dataGridAttraction.Margin = new Padding(3, 4, 3, 4);
+            dataGridAttraction.Name = "dataGridAttraction";
+            dataGridAttraction.ReadOnly = true;
+            dataGridAttraction.RowHeadersWidth = 60;
+            dataGridAttraction.Size = new Size(800, 200);
+            dataGridAttraction.TabIndex = 7;
+            // 
             // FormParticleSim
             // 
+            AcceptButton = buttonPausePlay;
             AutoScaleDimensions = new SizeF(8F, 20F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
             ClientSize = new Size(800, 553);
+            Controls.Add(buttonPausePlay);
+            Controls.Add(dataGridAttraction);
             Controls.Add(labelCyclesPerFrame);
             Controls.Add(numericUpDownCycles);
-            Controls.Add(checkBoxOverylayDensity);
             Controls.Add(labelAverageSpeed);
             Controls.Add(labelParticleCount);
             Controls.Add(labelDensity);
             DoubleBuffered = true;
+            ForeColor = Color.Black;
+            KeyPreview = true;
             Margin = new Padding(3, 4, 3, 4);
             Name = "FormParticleSim";
             ShowIcon = false;
             Text = "Particle Sim";
-            TopMost = true;
+            TransparencyKey = Color.DarkSlateGray;
+            FormClosed += FormParticleSim_FormClosed;
             Paint += FormParticleSim_Paint;
+            Enter += FormParticleSim_Enter;
+            KeyDown += FormParticleSim_KeyDown;
+            KeyUp += FormParticleSim_KeyUp;
             ((System.ComponentModel.ISupportInitialize)numericUpDownCycles).EndInit();
+            ((System.ComponentModel.ISupportInitialize)dataGridAttraction).EndInit();
             ResumeLayout(false);
             PerformLayout();
         }
@@ -138,8 +164,9 @@
         private Label labelDensity;
         private Label labelParticleCount;
         private Label labelAverageSpeed;
-        private CheckBox checkBoxOverylayDensity;
         private NumericUpDown numericUpDownCycles;
         private Label labelCyclesPerFrame;
+        private Button buttonPausePlay;
+        private DataGridView dataGridAttraction;
     }
 }
