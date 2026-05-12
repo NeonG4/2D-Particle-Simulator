@@ -14,6 +14,7 @@ namespace _2D_Particle_Simulator
         float scale = 2f;
         int cycles = 1;
         bool paused = false;
+        readonly Random rand = new Random();
         public FormParticleSim(int particleTypes, int particleCount, int boundX, int boundY)
         {
             InitializeComponent();
@@ -22,8 +23,6 @@ namespace _2D_Particle_Simulator
             particles = new Particle[particleCount];
             int size = particleTypes;
             corner = new Point(boundX, boundY);
-
-            Random rand = new Random();
 
             float[,] al = new float[size, size];
             float[,] assoc = new float[size, size];
@@ -86,6 +85,8 @@ namespace _2D_Particle_Simulator
             labelCyclesPerFrame.Location = new Point(labelXPos, labelCyclesPerFrame.Location.Y);
 
             buttonPausePlay.Location = new Point(labelXPos, buttonPausePlay.Location.Y);
+            buttonRandomize.Location = new Point(labelXPos, buttonRandomize.Location.Y);
+            labelAttractionKey.Location = new Point(0, buttonRandomize.Location.Y + buttonRandomize.Height + 10);
 
             InitializeAttractionTable();
         }
@@ -122,6 +123,8 @@ namespace _2D_Particle_Simulator
             }
 
             int gridTop = (int)(corner.Y * scale) + 20;
+            labelAttractionKey.Text = "Rows: affected particle type | Columns: influencing particle type"; 
+            labelAttractionKey.Location = new Point(0, gridTop - labelAttractionKey.Height - 5);
             dataGridAttraction.Location = new Point(0, gridTop);
             dataGridAttraction.Width = ClientSize.Width;
             int desiredHeight = 200;
@@ -261,6 +264,19 @@ namespace _2D_Particle_Simulator
         private void buttonPausePlay_Click(object sender, EventArgs e)
         {
             TickPauseButton();
+        }
+        private void buttonRandomize_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < particles.Length; i++)
+            {
+                particles[i].x = rand.Next(1, corner.X - 1);
+                particles[i].y = rand.Next(1, corner.Y - 1);
+                particles[i].xvel = 0;
+                particles[i].yvel = 0;
+            }
+
+            labelAverageSpeed.Text = "Average Speed: " + GetAverageSpeed() + " pixels per tick";
+            Invalidate();
         }
         private void TickPauseButton()
         {

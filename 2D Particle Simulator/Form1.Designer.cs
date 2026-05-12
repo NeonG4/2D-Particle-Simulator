@@ -36,6 +36,8 @@
             numericUpDownCycles = new NumericUpDown();
             labelCyclesPerFrame = new Label();
             buttonPausePlay = new Button();
+            buttonRandomize = new Button();
+            labelAttractionKey = new Label();
             dataGridAttraction = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)numericUpDownCycles).BeginInit();
             ((System.ComponentModel.ISupportInitialize)dataGridAttraction).BeginInit();
@@ -110,6 +112,26 @@
             buttonPausePlay.UseVisualStyleBackColor = true;
             buttonPausePlay.Click += buttonPausePlay_Click;
             // 
+            // buttonRandomize
+            // 
+            buttonRandomize.Location = new Point(11, 139);
+            buttonRandomize.Name = "buttonRandomize";
+            buttonRandomize.Size = new Size(108, 29);
+            buttonRandomize.TabIndex = 8;
+            buttonRandomize.Text = "Randomize";
+            buttonRandomize.UseVisualStyleBackColor = true;
+            buttonRandomize.Click += buttonRandomize_Click;
+            // 
+            // labelAttractionKey
+            // 
+            labelAttractionKey.AutoSize = true;
+            labelAttractionKey.ForeColor = SystemColors.ControlLightLight;
+            labelAttractionKey.Location = new Point(12, 178);
+            labelAttractionKey.Name = "labelAttractionKey";
+            labelAttractionKey.Size = new Size(38, 20);
+            labelAttractionKey.TabIndex = 9;
+            labelAttractionKey.Text = "Key";
+            // 
             // dataGridAttraction
             // 
             dataGridAttraction.AllowUserToAddRows = false;
@@ -132,6 +154,8 @@
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.Black;
             ClientSize = new Size(800, 553);
+            Controls.Add(labelAttractionKey);
+            Controls.Add(buttonRandomize);
             Controls.Add(buttonPausePlay);
             Controls.Add(dataGridAttraction);
             Controls.Add(labelCyclesPerFrame);
@@ -167,6 +191,8 @@
         private NumericUpDown numericUpDownCycles;
         private Label labelCyclesPerFrame;
         private Button buttonPausePlay;
+        private Button buttonRandomize;
+        private Label labelAttractionKey;
         private DataGridView dataGridAttraction;
     }
 }
