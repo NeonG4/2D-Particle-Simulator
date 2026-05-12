@@ -223,6 +223,51 @@ namespace _2D_Particle_Simulator
                 particles[i].xvel = particleData[i].XVel;
                 particles[i].yvel = particleData[i].YVel;
             }
+
+            ResolveParticleCollisions();
+        }
+
+        private void ResolveParticleCollisions()
+        {
+            const float minDistance = 2f;
+            const float minDistanceSq = minDistance * minDistance;
+            const float epsilon = 0.0001f;
+
+            for (int i = 0; i < particles.Length; i++)
+            {
+                for (int j = i + 1; j < particles.Length; j++)
+                {
+                    var a = particles[i];
+                    var b = particles[j];
+                    float dx = a.x - b.x;
+                    float dy = a.y - b.y;
+                    float distSq = dx * dx + dy * dy;
+                    if (distSq >= minDistanceSq || distSq <= epsilon)
+                    {
+                        continue;
+                    }
+
+                    float dist = MathF.Sqrt(distSq);
+                    float nx = dx / dist;
+                    float ny = dy / dist;
+
+                    float overlap = (minDistance - dist) / 2f;
+                    a.x += nx * overlap;
+                    a.y += ny * overlap;
+                    b.x -= nx * overlap;
+                    b.y -= ny * overlap;
+
+                    float relVel = (a.xvel - b.xvel) * nx + (a.yvel - b.yvel) * ny;
+                    if (relVel < 0f)
+                    {
+                        float impulse = -relVel;
+                        a.xvel += nx * impulse;
+                        a.yvel += ny * impulse;
+                        b.xvel -= nx * impulse;
+                        b.yvel -= ny * impulse;
+                    }
+                }
+            }
         }
 
         private void FormParticleSim_Paint(object sender, PaintEventArgs e)
