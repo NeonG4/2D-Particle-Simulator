@@ -126,9 +126,11 @@ namespace _2D_Particle_Simulator
             labelAttractionKey.Text = "Rows: affected particle type | Columns: influencing particle type"; 
             labelAttractionKey.Location = new Point(0, gridTop - labelAttractionKey.Height - 5);
             dataGridAttraction.Location = new Point(0, gridTop);
-            dataGridAttraction.Width = ClientSize.Width;
+            int tableSpacing = 10;
+            dataGridAttraction.Width = ClientSize.Width - buttonRandomizeAttraction.Width - tableSpacing;
             int desiredHeight = 200;
             dataGridAttraction.Height = desiredHeight;
+            buttonRandomizeAttraction.Location = new Point(dataGridAttraction.Right + tableSpacing, gridTop);
             if (ClientSize.Height < gridTop + desiredHeight + 10)
             {
                 ClientSize = new Size(ClientSize.Width, gridTop + desiredHeight + 10);
@@ -212,6 +214,8 @@ namespace _2D_Particle_Simulator
             {
                 var shader = new ParticleUpdateShader(gpuParticles, gpuAttraction, gpuAssoc, types, particles.Length, corner.X, corner.Y);
                 device.For(particles.Length, in shader);
+                var collisionShader = new ParticleCollisionShader(gpuParticles, particles.Length);
+                device.For(particles.Length, in collisionShader);
                 gpuParticles.CopyTo(particleData);
             }
 
@@ -224,7 +228,6 @@ namespace _2D_Particle_Simulator
                 particles[i].yvel = particleData[i].YVel;
             }
 
-            ResolveParticleCollisions();
         }
 
         private void ResolveParticleCollisions()
@@ -322,6 +325,27 @@ namespace _2D_Particle_Simulator
 
             labelAverageSpeed.Text = "Average Speed: " + GetAverageSpeed() + " pixels per tick";
             Invalidate();
+        }
+        private void buttonRandomizeAttraction_Click(object sender, EventArgs e)
+        {
+            const float minValue = 0.01f;
+            const float maxValue = 10.00f;
+            int size = Particle.attractionLevels.GetLength(0);
+
+            for (int i = 0; i < size; i++)
+            {
+                for (int j = i; j < size; j++)
+                {
+                    float value = (float)(rand.NextDouble() * (maxValue - minValue) + minValue);
+                    Particle.attractionLevels[i, j] = value;
+                    Particle.attractionLevels[j, i] = value;
+                    dataGridAttraction.Rows[i].Cells[j].Value = value;
+                    if (i != j)
+                    {
+                        dataGridAttraction.Rows[j].Cells[i].Value = value;
+                    }
+                }
+            }
         }
         private void TickPauseButton()
         {

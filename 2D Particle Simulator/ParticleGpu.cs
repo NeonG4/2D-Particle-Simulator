@@ -106,4 +106,76 @@ namespace _2D_Particle_Simulator
             particles[i] = self;
         }
     }
+
+    [GeneratedComputeShaderDescriptor]
+    [ThreadGroupSize(64, 1, 1)]
+    public readonly partial struct ParticleCollisionShader : IComputeShader
+    {
+        public readonly ReadWriteBuffer<ParticleGpu> particles;
+        public readonly int particleCount;
+
+        public ParticleCollisionShader(ReadWriteBuffer<ParticleGpu> particles, int particleCount)
+        {
+            this.particles = particles;
+            this.particleCount = particleCount;
+        }
+
+        public void Execute()
+        {
+            int i = ThreadIds.X;
+            if (i >= particleCount)
+            {
+                return;
+            }
+
+            const float minDistance = 2f;
+            const float minDistanceSq = minDistance * minDistance;
+            const float epsilon = 0.0001f;
+
+            ParticleGpu self = particles[i];
+            float correctionX = 0f;
+            float correctionY = 0f;
+            float xvel = self.XVel;
+            float yvel = self.YVel;
+
+            for (int j = 0; j < particleCount; j++)
+            {
+                if (i == j)
+                {
+                    continue;
+                }
+
+                ParticleGpu other = particles[j];
+                float dx = self.X - other.X;
+                float dy = self.Y - other.Y;
+                float distSq = dx * dx + dy * dy;
+                if (distSq >= minDistanceSq || distSq <= epsilon)
+                {
+                    continue;
+                }
+
+                float dist = Hlsl.Sqrt(distSq);
+                float nx = dx / dist;
+                float ny = dy / dist;
+
+                float overlap = (minDistance - dist) * 0.5f;
+                correctionX += nx * overlap;
+                correctionY += ny * overlap;
+
+                float relVel = (xvel - other.XVel) * nx + (yvel - other.YVel) * ny;
+                if (relVel < 0f)
+                {
+                    float impulse = -relVel;
+                    xvel += nx * impulse;
+                    yvel += ny * impulse;
+                }
+            }
+
+            self.X += correctionX;
+            self.Y += correctionY;
+            self.XVel = xvel;
+            self.YVel = yvel;
+            particles[i] = self;
+        }
+    }
 }

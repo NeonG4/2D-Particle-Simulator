@@ -37,6 +37,7 @@
             labelCyclesPerFrame = new Label();
             buttonPausePlay = new Button();
             buttonRandomize = new Button();
+            buttonRandomizeAttraction = new Button();
             labelAttractionKey = new Label();
             dataGridAttraction = new DataGridView();
             ((System.ComponentModel.ISupportInitialize)numericUpDownCycles).BeginInit();
@@ -122,6 +123,16 @@
             buttonRandomize.UseVisualStyleBackColor = true;
             buttonRandomize.Click += buttonRandomize_Click;
             // 
+            // buttonRandomizeAttraction
+            // 
+            buttonRandomizeAttraction.Location = new Point(0, 0);
+            buttonRandomizeAttraction.Name = "buttonRandomizeAttraction";
+            buttonRandomizeAttraction.Size = new Size(150, 29);
+            buttonRandomizeAttraction.TabIndex = 10;
+            buttonRandomizeAttraction.Text = "Randomize Table";
+            buttonRandomizeAttraction.UseVisualStyleBackColor = true;
+            buttonRandomizeAttraction.Click += buttonRandomizeAttraction_Click;
+            // 
             // labelAttractionKey
             // 
             labelAttractionKey.AutoSize = true;
@@ -155,6 +166,7 @@
             BackColor = Color.Black;
             ClientSize = new Size(800, 553);
             Controls.Add(labelAttractionKey);
+            Controls.Add(buttonRandomizeAttraction);
             Controls.Add(buttonRandomize);
             Controls.Add(buttonPausePlay);
             Controls.Add(dataGridAttraction);
@@ -192,6 +204,7 @@
         private Label labelCyclesPerFrame;
         private Button buttonPausePlay;
         private Button buttonRandomize;
+        private Button buttonRandomizeAttraction;
         private Label labelAttractionKey;
         private DataGridView dataGridAttraction;
     }
